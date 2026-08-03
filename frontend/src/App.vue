@@ -1,10 +1,10 @@
 <template>
-  <div class="flex h-screen w-screen bg-dark-900 text-slate-100 overflow-hidden font-['Plus_Jakarta_Sans',sans-serif]">
+  <div class="flex h-screen w-screen bg-surface text-on-surface overflow-hidden font-sans antialiased">
     <!-- Left Navigation Sidebar -->
     <Sidebar />
 
     <!-- Center Workspace -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden bg-dark-900 border-l border-slate-800">
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-surface border-l border-outline-variant">
       <ExplorerTab v-if="store.activeTab === 'explorer'" />
       <SqlEditorTab v-else-if="store.activeTab === 'editor'" />
       <DataGridTab v-else-if="store.activeTab === 'data'" />
@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import { useAppStore } from './stores/app';
 
 import Sidebar from './components/Sidebar.vue';
@@ -36,6 +36,10 @@ import SettingsModal from './components/SettingsModal.vue';
 import Toast from './components/Toast.vue';
 
 const store = useAppStore();
+
+watch(() => store.config.theme, (newTheme) => {
+  document.documentElement.className = newTheme || 'light';
+});
 
 onMounted(async () => {
   await store.loadConfig();

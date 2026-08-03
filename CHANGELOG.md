@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.2] - 2026-08-03
+
+### Added
+- **Stitch Redesign UI/UX Integration (MCP Project 7217090369662675000)**:
+  - Downloaded and applied official HTML prototypes for SQL Console, Data Browser, Visual ERD, Schema Explorer, and Connection Profiles.
+  - Integrated Google Material Symbols (`database`, `terminal`, `table_chart`, `schema`, `account_tree`, `folder_open`, `settings`, `refresh`, etc.).
+- **Appearance & Palette System**:
+  - Full **Light Mode** & **Dark Mode** support with crisp surface tokens (`bg-surface`, `bg-surface-container-low`, `bg-surface-container-lowest`, `text-on-surface`).
+  - Added 4 custom color palette accents: `Emerald Mint` (`#006c49` / `#10b981`), `Indigo Blue` (`#2563eb` / `#6366f1`), `Amber Gold` (`#d97706` / `#f59e0b`), and `Violet Deep` (`#7c3aed` / `#a855f7`).
+  - Added quick theme toggle button in the sidebar header and live theme switcher in Settings Modal.
+- **Modern NavBar (Sidebar Navigation)**:
+  - Re-architected vertical workspace navigation menu with active primary border highlights, icon-text labels, and connection profile selector card.
+
+### Changed
+- Bumped application version to `v0.0.2` across CLI, Web server, and Frontend UI.
+
 ## [0.0.1] - 2026-08-03
 
 ### Added

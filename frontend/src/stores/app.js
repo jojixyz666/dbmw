@@ -17,7 +17,8 @@ export const useAppStore = defineStore('app', {
     isConnectionsModalOpen: false,
     isSettingsModalOpen: false,
     config: {
-      theme: 'dark',
+      theme: 'light',
+      palette: 'emerald',
       defaultPageSize: 25,
       serverPort: 8085,
     },
@@ -43,12 +44,24 @@ export const useAppStore = defineStore('app', {
       this.toasts = this.toasts.filter((t) => t.id !== id);
     },
 
+    applyTheme() {
+      const theme = this.config.theme || 'light';
+      const palette = this.config.palette || 'emerald';
+      document.documentElement.className = `${theme} palette-${palette}`;
+    },
+
     async loadConfig() {
       try {
         const cfg = await api.getConfig();
-        if (cfg) this.config = cfg;
+        if (cfg) {
+          this.config = { ...this.config, ...cfg };
+          if (!cfg.theme) this.config.theme = 'light';
+          if (!cfg.palette) this.config.palette = 'emerald';
+        }
+        this.applyTheme();
       } catch (err) {
         console.error('Failed to load config:', err);
+        this.applyTheme();
       }
     },
 

@@ -23,7 +23,7 @@ import (
 var (
 	portFlag     int
 	noOpenFlag   bool
-	Version      = "0.0.1"
+	Version      = "0.0.2"
 	CommitHash   = "dev"
 	BuildDate    = "unknown"
 )

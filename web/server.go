@@ -39,7 +39,7 @@ func NewServer(
 	cfgStore *storage.ConfigStore,
 ) (*Server, error) {
 	app := fiber.New(fiber.Config{
-		AppName:               "DBMW v0.0.1",
+		AppName:               "DBMW v0.0.2",
 		DisableStartupMessage: true,
 	})
 

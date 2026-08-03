@@ -1,112 +1,117 @@
 <template>
-  <div class="h-full flex flex-col bg-dark-900 overflow-hidden">
+  <div class="h-full flex flex-col bg-surface overflow-hidden">
     <!-- Top Action Bar -->
-    <div class="px-6 py-3 border-b border-slate-800 flex items-center justify-between bg-dark-900/80 flex-wrap gap-3">
-      <div class="flex items-center gap-3">
-        <div class="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-emerald-400">
-          📋
+    <header class="h-[72px] px-6 border-b border-outline-variant flex items-center justify-between bg-surface flex-wrap gap-3 flex-shrink-0">
+      <div class="flex items-center gap-4">
+        <div class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+          <span class="material-symbols-outlined text-2xl">table_chart</span>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h2 class="text-sm font-bold text-slate-100 font-mono">
+            <h2 class="text-sm font-bold text-on-surface font-mono tracking-tight m-0">
               {{ store.selectedTable || 'Select a table' }}
             </h2>
-            <span v-if="totalRows >= 0" class="text-xs text-slate-500 font-mono">
-              ({{ totalRows }} rows)
+            <span v-if="totalRows >= 0" class="text-xs text-primary font-mono bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold">
+              {{ totalRows }} rows
             </span>
           </div>
-          <p class="text-[11px] text-slate-400">Inline editable spreadsheet data browser</p>
+          <p class="text-xs text-on-surface-variant m-0">Inline editable spreadsheet data browser</p>
         </div>
       </div>
 
       <div class="flex items-center gap-2">
-        <input
-          v-model="searchTerm"
-          @keyup.enter="fetchRows(1)"
-          placeholder="Search columns..."
-          class="bg-dark-800 border border-slate-700/80 rounded-md px-3 py-1 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-44 font-mono"
-        />
+        <div class="relative">
+          <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">search</span>
+          <input
+            v-model="searchTerm"
+            @keyup.enter="fetchRows(1)"
+            placeholder="Search columns..."
+            class="bg-surface-container-lowest border border-outline-variant rounded-md pl-8 pr-3 py-1.5 text-xs text-on-surface placeholder:text-on-surface-variant/70 focus:outline-none focus:border-primary w-48 font-mono transition-colors"
+          />
+        </div>
 
         <button
           @click="showFilterModal = true"
-          class="px-3 py-1 bg-dark-800 hover:bg-dark-700 text-slate-200 border border-slate-700 rounded-md text-xs font-medium flex items-center gap-1 transition"
-          :class="filters.length > 0 ? 'border-emerald-500 text-emerald-300' : ''"
+          class="h-9 px-3 bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+          :class="filters.length > 0 ? 'border-primary text-primary bg-primary/10' : ''"
         >
-          <span>🎯</span> Filter {{ filters.length > 0 ? `(${filters.length})` : '' }}
+          <span class="material-symbols-outlined text-[16px]">filter_alt</span> Filter {{ filters.length > 0 ? `(${filters.length})` : '' }}
         </button>
 
         <button
           @click="openInsertModal"
           :disabled="!store.selectedTable"
-          class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-md text-xs font-semibold flex items-center gap-1 transition shadow"
+          class="h-9 px-3.5 bg-primary hover:bg-primary-container disabled:opacity-40 text-on-primary rounded text-xs font-bold flex items-center gap-1 transition-colors shadow-sm active:scale-95"
         >
-          <span>+</span> Add Row
+          <span class="material-symbols-outlined text-[16px]">add</span> Add Row
         </button>
 
         <button
           @click="fetchRows(page)"
-          class="p-1 px-2 text-slate-400 hover:text-white bg-dark-800 border border-slate-700 rounded-md transition text-xs"
+          class="h-9 px-2.5 text-on-surface-variant hover:text-on-surface bg-surface-container-low border border-outline-variant rounded transition-colors text-xs shadow-sm flex items-center justify-center"
           title="Refresh"
         >
-          🔄
+          <span class="material-symbols-outlined text-[16px]">refresh</span>
         </button>
       </div>
-    </div>
+    </header>
 
     <!-- Data Table Container -->
-    <div class="flex-1 overflow-auto bg-dark-900 relative">
-      <div v-if="!store.selectedTable" class="flex-1 h-full flex flex-col items-center justify-center text-slate-500 p-8 text-center">
-        <div class="text-4xl mb-3">📋</div>
-        <h3 class="text-base font-semibold text-slate-300 mb-1">No table selected</h3>
-        <p class="text-xs max-w-sm">Select a table from the sidebar to inspect records, sort columns, filter rows, and edit values inline.</p>
+    <div class="flex-1 overflow-auto bg-surface-container-lowest relative">
+      <div v-if="!store.selectedTable" class="flex-1 h-full flex flex-col items-center justify-center text-on-surface-variant p-8 text-center">
+        <span class="material-symbols-outlined text-5xl mb-3 text-primary/40">table_chart</span>
+        <h3 class="text-sm font-bold text-on-surface mb-1">No Table Selected</h3>
+        <p class="text-xs max-w-sm text-on-surface-variant leading-relaxed font-mono">Select a table from the sidebar to inspect records, sort columns, filter rows, and edit values inline.</p>
       </div>
 
-      <div v-else-if="loading" class="flex items-center justify-center h-full text-slate-500 text-sm">
-        Loading table records...
+      <div v-else-if="loading" class="flex items-center justify-center h-full text-on-surface-variant text-xs font-mono gap-2">
+        <span class="material-symbols-outlined text-primary text-xl animate-spin">sync</span> Loading table records...
       </div>
 
-      <div v-else-if="rows.length === 0" class="flex flex-col items-center justify-center h-full text-slate-500 text-sm">
-        <p class="mb-2">No records found matching criteria.</p>
-        <button @click="openInsertModal" class="text-xs text-emerald-400 hover:underline">+ Insert a new record</button>
+      <div v-else-if="rows.length === 0" class="flex flex-col items-center justify-center h-full text-on-surface-variant text-xs font-mono space-y-3">
+        <p class="text-xs text-on-surface-variant">No records found matching criteria.</p>
+        <button @click="openInsertModal" class="px-3 py-1.5 bg-primary text-on-primary rounded text-xs font-bold transition shadow">
+          + Insert a new record
+        </button>
       </div>
 
       <table v-else class="w-full text-left text-xs border-collapse">
-        <thead class="sticky top-0 bg-dark-800 text-slate-300 uppercase text-[10px] tracking-wider z-10 shadow border-b border-slate-700 font-mono select-none">
+        <thead class="sticky top-0 bg-surface-container-low text-on-surface-variant uppercase text-[10px] tracking-wider z-10 shadow-sm border-b border-outline-variant font-mono select-none">
           <tr>
-            <th class="py-2.5 px-3 bg-dark-900 border-r border-slate-800 text-center w-12 text-slate-500">Actions</th>
+            <th class="py-2.5 px-3 border-r border-outline-variant w-10 text-center bg-surface-container-low">#</th>
             <th
               v-for="col in columns"
               :key="col"
               @click="toggleSort(col)"
-              class="py-2.5 px-4 cursor-pointer hover:bg-dark-700/80 transition border-r border-slate-800 whitespace-nowrap"
+              class="py-2.5 px-4 cursor-pointer hover:bg-surface-container transition-colors border-r border-outline-variant whitespace-nowrap"
             >
               <div class="flex items-center justify-between gap-2">
                 <span class="flex items-center gap-1.5 align-middle">
-                  <span v-if="pkColumns.includes(col)" class="text-amber-400" title="Primary Key">🔑</span>
-                  {{ col }}
+                  <span v-if="pkColumns.includes(col)" class="material-symbols-outlined text-amber-400 text-sm" title="Primary Key">key</span>
+                  <span class="font-bold text-on-surface">{{ col }}</span>
                 </span>
-                <span v-if="sortBy?.column === col" class="text-emerald-400 font-bold">
+                <span v-if="sortBy?.column === col" class="text-primary font-bold">
                   {{ sortBy.direction === 'asc' ? '▲' : '▼' }}
                 </span>
-                <span v-else class="text-slate-600 opacity-40 hover:opacity-100">⇅</span>
+                <span v-else class="text-on-surface-variant opacity-40 hover:opacity-100">⇅</span>
               </div>
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-slate-800/80 text-slate-200 font-mono">
+        <tbody class="divide-y divide-outline-variant/60 text-on-surface font-mono">
           <tr
             v-for="(row, rIdx) in rows"
             :key="rIdx"
-            class="hover:bg-dark-800/60 transition group"
+            class="hover:bg-surface-container/60 transition-colors group"
           >
             <!-- Delete action button -->
-            <td class="py-1.5 px-3 text-center border-r border-slate-800/60 bg-dark-900/40">
+            <td class="py-1.5 px-3 text-center border-r border-outline-variant bg-surface-container-lowest">
               <button
                 @click="confirmDeleteRow(row)"
-                class="opacity-40 group-hover:opacity-100 text-red-400 hover:text-red-300 transition text-xs p-0.5 rounded"
+                class="opacity-40 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity text-xs p-0.5 rounded flex items-center justify-center mx-auto"
                 title="Delete row"
               >
-                🗑️
+                <span class="material-symbols-outlined text-sm">delete</span>
               </button>
             </td>
 
@@ -114,27 +119,26 @@
             <td
               v-for="col in columns"
               :key="col"
-              class="py-2 px-4 border-r border-slate-800/60 whitespace-nowrap max-w-xs truncate relative cursor-pointer group/cell"
-              @click="startEdit(rIdx, col, row[col])"
+              class="py-2 px-4 border-r border-outline-variant whitespace-nowrap max-w-xs truncate cursor-pointer hover:bg-primary/10 transition-colors"
+              @dblclick="startEdit(row, col)"
             >
-              <div v-if="editingCell?.row === rIdx && editingCell?.col === col" class="flex items-center gap-1">
+              <template v-if="editingCell?.row === row && editingCell?.col === col">
                 <input
-                  v-model="editingCell.value"
-                  @blur="saveEdit"
+                  v-model="editValue"
                   @keyup.enter="saveEdit"
                   @keyup.esc="cancelEdit"
+                  @blur="saveEdit"
                   ref="editInput"
-                  class="bg-dark-950 border border-emerald-500 rounded px-2 py-0.5 text-xs text-slate-100 w-full focus:outline-none"
+                  class="w-full bg-surface-container border border-primary text-primary font-mono px-2 py-1 text-xs rounded focus:outline-none shadow"
                 />
-              </div>
-              <div v-else class="flex items-center justify-between">
-                <span v-if="row[col] === null" class="text-slate-600 italic">NULL</span>
-                <span v-else-if="typeof row[col] === 'boolean'" class="px-1.5 py-0.5 rounded text-[10px] font-bold" :class="row[col] ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'">
-                  {{ row[col] ? 'TRUE' : 'FALSE' }}
+              </template>
+              <template v-else>
+                <span v-if="row[col] === null" class="text-on-surface-variant italic">NULL</span>
+                <span v-else-if="typeof row[col] === 'boolean'" class="px-1.5 py-0.5 rounded text-[10px] font-bold" :class="row[col] ? 'bg-primary/20 text-primary' : 'bg-red-950/30 text-red-400'">
+                  {{ row[col] }}
                 </span>
                 <span v-else>{{ row[col] }}</span>
-                <span class="opacity-0 group-hover/cell:opacity-60 text-[10px] text-slate-500 ml-1">✏️</span>
-              </div>
+              </template>
             </td>
           </tr>
         </tbody>
@@ -142,152 +146,81 @@
     </div>
 
     <!-- Pagination Footer -->
-    <div class="px-6 py-2.5 border-t border-slate-800 flex items-center justify-between bg-dark-800/60 text-xs font-mono">
-      <div class="text-slate-400 flex items-center gap-3">
-        <span>Page {{ page }} of {{ totalPages || 1 }}</span>
-        <span>•</span>
-        <div class="flex items-center gap-1">
-          <span>Rows per page:</span>
-          <select
-            v-model.number="pageSize"
-            @change="fetchRows(1)"
-            class="bg-dark-900 border border-slate-700 rounded px-2 py-0.5 text-slate-200 focus:outline-none focus:border-emerald-500"
-          >
-            <option :value="10">10</option>
-            <option :value="25">25</option>
-            <option :value="50">50</option>
-            <option :value="100">100</option>
-          </select>
-        </div>
+    <div v-if="store.selectedTable" class="px-6 py-2.5 bg-surface-container-low border-t border-outline-variant flex items-center justify-between text-xs font-mono text-on-surface-variant flex-shrink-0">
+      <div class="flex items-center gap-2">
+        <span>Page {{ page }} of {{ totalPages }}</span>
+        <span class="text-outline-variant">•</span>
+        <select
+          v-model.number="pageSize"
+          @change="fetchRows(1)"
+          class="bg-surface-container-lowest border border-outline-variant text-on-surface rounded px-2 py-0.5 text-xs focus:outline-none focus:border-primary"
+        >
+          <option :value="10">10 / page</option>
+          <option :value="25">25 / page</option>
+          <option :value="50">50 / page</option>
+          <option :value="100">100 / page</option>
+        </select>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5">
+        <button
+          @click="fetchRows(1)"
+          :disabled="page === 1"
+          class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high disabled:opacity-30 rounded border border-outline-variant transition-colors"
+        >
+          « First
+        </button>
         <button
           @click="fetchRows(page - 1)"
-          :disabled="page <= 1"
-          class="px-3 py-1 bg-dark-800 hover:bg-dark-700 disabled:opacity-40 text-slate-200 border border-slate-700 rounded transition"
+          :disabled="page === 1"
+          class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high disabled:opacity-30 rounded border border-outline-variant transition-colors"
         >
-          Previous
+          ‹ Prev
         </button>
         <button
           @click="fetchRows(page + 1)"
           :disabled="page >= totalPages"
-          class="px-3 py-1 bg-dark-800 hover:bg-dark-700 disabled:opacity-40 text-slate-200 border border-slate-700 rounded transition"
+          class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high disabled:opacity-30 rounded border border-outline-variant transition-colors"
         >
-          Next
+          Next ›
+        </button>
+        <button
+          @click="fetchRows(totalPages)"
+          :disabled="page >= totalPages"
+          class="px-2.5 py-1 bg-surface-container hover:bg-surface-container-high disabled:opacity-30 rounded border border-outline-variant transition-colors"
+        >
+          Last »
         </button>
       </div>
     </div>
 
     <!-- Insert Row Modal -->
-    <div v-if="showInsertModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-dark-800 border border-slate-700 rounded-xl w-full max-w-xl shadow-2xl p-6 space-y-4 max-h-[85vh] overflow-y-auto">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-700">
-          <h3 class="text-sm font-bold text-slate-100 font-mono">Insert Record into {{ store.selectedTable }}</h3>
-          <button @click="showInsertModal = false" class="text-slate-400 hover:text-white">✕</button>
+    <div v-if="showInsertModal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-surface border border-outline-variant rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+        <div class="px-6 py-4 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+          <h3 class="font-bold text-on-surface flex items-center gap-2 font-mono text-sm">
+            <span class="material-symbols-outlined text-primary">add</span> Insert New Record into <span class="text-primary">{{ store.selectedTable }}</span>
+          </h3>
+          <button @click="showInsertModal = false" class="text-on-surface-variant hover:text-on-surface font-mono">✕</button>
         </div>
 
-        <div class="space-y-3 font-mono">
-          <div v-for="col in metaColumns" :key="col.name">
-            <label class="block text-xs font-semibold text-slate-300 mb-1 flex items-center justify-between">
-              <span>{{ col.name }} <span class="text-emerald-400 font-normal text-[11px]">({{ col.dataType }})</span></span>
-              <span v-if="col.isPrimaryKey" class="text-amber-400 text-[10px]">PK</span>
+        <div class="p-6 overflow-y-auto space-y-3 font-mono">
+          <div v-for="col in columns" :key="col" class="space-y-1">
+            <label class="block text-xs font-bold text-on-surface flex items-center gap-1">
+              {{ col }}
+              <span v-if="pkColumns.includes(col)" class="text-amber-400 text-[10px]">(Primary Key)</span>
             </label>
             <input
-              v-model="insertForm[col.name]"
-              :placeholder="`Enter ${col.name}...`"
-              class="w-full bg-dark-900 border border-slate-700 rounded-md px-3 py-1.5 text-xs text-slate-100 placeholder-slate-600 focus:outline-none focus:border-emerald-500"
+              v-model="newRowData[col]"
+              :placeholder="pkColumns.includes(col) ? 'Auto-increment or required ID' : 'Value...'"
+              class="w-full bg-surface-container-lowest border border-outline-variant rounded-md px-3 py-1.5 text-xs text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary font-mono"
             />
           </div>
         </div>
 
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-700">
-          <button
-            @click="showInsertModal = false"
-            class="px-4 py-1.5 bg-dark-700 text-slate-300 rounded text-xs font-semibold"
-          >
-            Cancel
-          </button>
-          <button
-            @click="submitInsert"
-            class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold"
-          >
-            Insert Row
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Filter Modal -->
-    <div v-if="showFilterModal" class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div class="bg-dark-800 border border-slate-700 rounded-xl w-full max-w-lg shadow-2xl p-6 space-y-4">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-700">
-          <h3 class="text-sm font-bold text-slate-100">Filter Records</h3>
-          <button @click="showFilterModal = false" class="text-slate-400 hover:text-white">✕</button>
-        </div>
-
-        <div class="space-y-3 font-mono">
-          <div v-for="(f, idx) in filters" :key="idx" class="flex items-center gap-2">
-            <select
-              v-model="f.column"
-              class="bg-dark-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200"
-            >
-              <option v-for="c in columns" :key="c" :value="c">{{ c }}</option>
-            </select>
-
-            <select
-              v-model="f.operator"
-              class="bg-dark-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200"
-            >
-              <option value="eq">=</option>
-              <option value="neq">!=</option>
-              <option value="contains">contains</option>
-              <option value="starts_with">starts with</option>
-              <option value="gt">&gt;</option>
-              <option value="lt">&lt;</option>
-              <option value="is_null">is null</option>
-              <option value="is_not_null">is not null</option>
-            </select>
-
-            <input
-              v-if="f.operator !== 'is_null' && f.operator !== 'is_not_null'"
-              v-model="f.value"
-              placeholder="Value..."
-              class="flex-1 bg-dark-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-100"
-            />
-
-            <button @click="filters.splice(idx, 1)" class="text-red-400 hover:text-red-300 px-1">✕</button>
-          </div>
-
-          <button
-            @click="addFilterClause"
-            class="text-xs text-emerald-400 hover:underline font-semibold"
-          >
-            + Add Filter Rule
-          </button>
-        </div>
-
-        <div class="flex items-center justify-between pt-3 border-t border-slate-700">
-          <button
-            @click="filters = []; fetchRows(1); showFilterModal = false;"
-            class="text-xs text-slate-400 hover:text-white"
-          >
-            Reset Filters
-          </button>
-          <div class="flex items-center gap-2">
-            <button
-              @click="showFilterModal = false"
-              class="px-3 py-1.5 bg-dark-700 text-slate-300 rounded text-xs"
-            >
-              Cancel
-            </button>
-            <button
-              @click="fetchRows(1); showFilterModal = false;"
-              class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-semibold"
-            >
-              Apply Filter
-            </button>
-          </div>
+        <div class="px-6 py-4 bg-surface-container-low border-t border-outline-variant flex justify-end gap-2">
+          <button @click="showInsertModal = false" class="px-4 py-2 bg-surface-container hover:bg-surface-container-high text-on-surface rounded text-xs font-semibold">Cancel</button>
+          <button @click="saveNewRecord" class="px-4 py-2 bg-primary text-on-primary rounded text-xs font-bold shadow">Save Record</button>
         </div>
       </div>
     </div>
@@ -295,88 +228,75 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, nextTick, onMounted } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { useAppStore } from '../stores/app';
 import { api } from '../api';
 
 const store = useAppStore();
-
 const rows = ref([]);
 const columns = ref([]);
 const pkColumns = ref([]);
-const metaColumns = ref([]);
+const loading = ref(false);
 const page = ref(1);
 const pageSize = ref(25);
 const totalRows = ref(0);
-const totalPages = ref(1);
-const loading = ref(false);
 const searchTerm = ref('');
 const sortBy = ref(null);
 const filters = ref([]);
 
-const showInsertModal = ref(false);
-const insertForm = reactive({});
-const showFilterModal = ref(false);
-
 const editingCell = ref(null);
+const editValue = ref('');
 const editInput = ref(null);
 
-async function fetchRows(targetPage = 1) {
-  if (!store.selectedTable || !store.activeConnectionId) return;
+const showInsertModal = ref(false);
+const newRowData = ref({});
+const showFilterModal = ref(false);
 
+const totalPages = computed(() => Math.ceil(totalRows.value / pageSize.value) || 1);
+
+async function fetchRows(p = 1) {
+  if (!store.selectedTable) return;
+  page.value = p;
+  loading.value = true;
   try {
-    loading.value = true;
-    page.value = targetPage;
-
-    const opts = {
+    const res = await api.getTableRows(store.activeConnectionId, store.selectedTable, {
       page: page.value,
       pageSize: pageSize.value,
-      searchTerm: searchTerm.value,
-      filters: filters.value,
-      sortBy: sortBy.value,
-    };
-
-    const res = await api.browseData(store.activeConnectionId, store.currentSchema, store.selectedTable, opts);
+      search: searchTerm.value,
+      sortColumn: sortBy.value?.column,
+      sortDirection: sortBy.value?.direction,
+    });
     rows.value = res.rows || [];
     columns.value = res.columns || [];
-    pkColumns.value = res.primaryKey || [];
+    pkColumns.value = res.primaryKeys || [];
     totalRows.value = res.totalRows || 0;
-    totalPages.value = res.totalPages || 1;
   } catch (err) {
-    store.addToast(`Failed to browse table: ${err.message}`, 'error');
+    store.addToast(err.message || 'Failed to fetch rows', 'error');
   } finally {
     loading.value = false;
   }
 }
 
 function toggleSort(col) {
-  if (!sortBy.value || sortBy.value.column !== col) {
-    sortBy.value = { column: col, direction: 'asc' };
-  } else if (sortBy.value.direction === 'asc') {
-    sortBy.value = { column: col, direction: 'desc' };
+  if (sortBy.value?.column === col) {
+    if (sortBy.value.direction === 'asc') {
+      sortBy.value.direction = 'desc';
+    } else {
+      sortBy.value = null;
+    }
   } else {
-    sortBy.value = null;
+    sortBy.value = { column: col, direction: 'asc' };
   }
   fetchRows(1);
 }
 
-function addFilterClause() {
-  filters.value.push({
-    column: columns.value[0] || '',
-    operator: 'eq',
-    value: '',
-  });
-}
-
-function startEdit(rowIdx, col, val) {
-  editingCell.value = {
-    row: rowIdx,
-    col,
-    value: val ?? '',
-    original: val,
-  };
+function startEdit(row, col) {
+  editingCell.value = { row, col };
+  editValue.value = row[col] === null ? '' : String(row[col]);
   nextTick(() => {
-    if (editInput.value?.[0]) editInput.value[0].focus();
+    if (editInput.value && editInput.value[0]) {
+      editInput.value[0].focus();
+    }
   });
 }
 
@@ -386,89 +306,69 @@ function cancelEdit() {
 
 async function saveEdit() {
   if (!editingCell.value) return;
-  const { row: rIdx, col, value, original } = editingCell.value;
-  if (value === original) {
-    cancelEdit();
-    return;
-  }
+  const { row, col } = editingCell.value;
+  const oldValue = row[col];
+  const newValue = editValue.value;
+  editingCell.value = null;
 
-  const rowObj = rows.value[rIdx];
-  const pkMap = {};
-  if (pkColumns.value.length > 0) {
-    pkColumns.value.forEach(k => { pkMap[k] = rowObj[k]; });
-  } else {
-    // If no PK, fallback to full row match
-    Object.assign(pkMap, rowObj);
-  }
+  if (String(oldValue) === String(newValue)) return;
 
   try {
-    await api.updateRow(store.activeConnectionId, store.currentSchema, store.selectedTable, pkMap, { [col]: value });
-    rows.value[rIdx][col] = value;
-    store.addToast('Cell updated', 'success');
+    await api.updateRow(store.activeConnectionId, store.selectedTable, {
+      primaryKeys: getPkValues(row),
+      column: col,
+      value: newValue,
+    });
+    row[col] = newValue;
+    store.addToast(`Updated ${col} successfully`);
   } catch (err) {
-    store.addToast(`Update failed: ${err.message}`, 'error');
-  } finally {
-    cancelEdit();
+    store.addToast(err.message || 'Failed to update row', 'error');
+    fetchRows(page.value);
   }
+}
+
+function getPkValues(row) {
+  const pks = {};
+  if (pkColumns.value.length > 0) {
+    pkColumns.value.forEach(pk => { pks[pk] = row[pk]; });
+  } else {
+    columns.value.forEach(c => { pks[c] = row[c]; });
+  }
+  return pks;
 }
 
 async function confirmDeleteRow(row) {
   if (!confirm('Are you sure you want to delete this row?')) return;
-
-  const pkMap = {};
-  if (pkColumns.value.length > 0) {
-    pkColumns.value.forEach(k => { pkMap[k] = row[k]; });
-  } else {
-    Object.assign(pkMap, row);
-  }
-
   try {
-    await api.deleteRow(store.activeConnectionId, store.currentSchema, store.selectedTable, pkMap);
-    store.addToast('Row deleted', 'success');
-    await fetchRows(page.value);
+    await api.deleteRow(store.activeConnectionId, store.selectedTable, getPkValues(row));
+    store.addToast('Row deleted successfully');
+    fetchRows(page.value);
   } catch (err) {
-    store.addToast(`Delete failed: ${err.message}`, 'error');
+    store.addToast(err.message || 'Failed to delete row', 'error');
   }
 }
 
-async function openInsertModal() {
-  try {
-    const cols = await api.listColumns(store.activeConnectionId, store.currentSchema, store.selectedTable);
-    metaColumns.value = cols || [];
-    Object.keys(insertForm).forEach(k => delete insertForm[k]);
-    metaColumns.value.forEach(c => {
-      insertForm[c.name] = '';
-    });
-    showInsertModal.value = true;
-  } catch (err) {
-    store.addToast(err.message, 'error');
-  }
+function openInsertModal() {
+  newRowData.value = {};
+  columns.value.forEach(c => { newRowData.value[c] = ''; });
+  showInsertModal.value = true;
 }
 
-async function submitInsert() {
+async function saveNewRecord() {
   try {
-    const nonNullValues = {};
-    for (const [k, v] of Object.entries(insertForm)) {
-      if (v !== '') nonNullValues[k] = v;
-    }
-    await api.insertRow(store.activeConnectionId, store.currentSchema, store.selectedTable, nonNullValues);
-    store.addToast('Row inserted', 'success');
+    await api.insertRow(store.activeConnectionId, store.selectedTable, newRowData.value);
     showInsertModal.value = false;
-    await fetchRows(page.value);
+    store.addToast('Record inserted successfully');
+    fetchRows(1);
   } catch (err) {
-    store.addToast(`Insert failed: ${err.message}`, 'error');
+    store.addToast(err.message || 'Failed to insert record', 'error');
   }
 }
 
-watch(() => [store.selectedTable, store.activeConnectionId, store.currentSchema], () => {
-  if (store.selectedTable) {
-    fetchRows(1);
-  }
-});
-
-onMounted(() => {
-  if (store.selectedTable) {
-    fetchRows(1);
-  }
+watch(() => store.selectedTable, () => {
+  page.value = 1;
+  sortBy.value = null;
+  searchTerm.value = '';
+  fetchRows(1);
 });
 </script>
