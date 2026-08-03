@@ -60,7 +60,7 @@ func (c *Connector) Ping(ctx context.Context) error {
 }
 
 func (c *Connector) currentDatabase(schema string) string {
-	if schema != "" {
+	if schema != "" && schema != "public" {
 		return schema
 	}
 	if c.config.Database != "" {
@@ -227,12 +227,22 @@ func (c *Connector) ListForeignKeys(ctx context.Context, schema, table string) (
 	dbName := c.currentDatabase(schema)
 	querySQL := `
 	SELECT 
-		constraint_name, 
-		column_name, 
-		referenced_table_name, 
-		referenced_column_name 
-	FROM information_schema.key_column_usage 
-	WHERE table_schema = ? AND table_name = ? AND referenced_table_name IS NOT NULL;
+		k.constraint_name, 
+		k.column_name, 
+		k.referenced_table_name, 
+		k.referenced_column_name,
+		COALESCE(k.referenced_table_schema, ''),
+		COALESCE(r.update_rule, 'RESTRICT'),
+		COALESCE(r.delete_rule, 'RESTRICT')
+	FROM information_schema.key_column_usage k
+	LEFT JOIN information_schema.referential_constraints r
+		ON r.constraint_name = k.constraint_name
+		AND r.constraint_schema = k.table_schema
+		AND r.table_name = k.table_name
+	WHERE k.table_schema = ? 
+	  AND k.table_name = ? 
+	  AND k.referenced_table_name IS NOT NULL
+	ORDER BY k.ordinal_position;
 	`
 	rows, err := c.db.QueryContext(ctx, querySQL, dbName, table)
 	if err != nil {
@@ -243,7 +253,7 @@ func (c *Connector) ListForeignKeys(ctx context.Context, schema, table string) (
 	var fks []explorer.ForeignKey
 	for rows.Next() {
 		var fk explorer.ForeignKey
-		if err := rows.Scan(&fk.Name, &fk.Column, &fk.RefTable, &fk.RefColumn); err != nil {
+		if err := rows.Scan(&fk.Name, &fk.Column, &fk.RefTable, &fk.RefColumn, &fk.RefSchema, &fk.OnUpdate, &fk.OnDelete); err != nil {
 			return nil, err
 		}
 		fks = append(fks, fk)

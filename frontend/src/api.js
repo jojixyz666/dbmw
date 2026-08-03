@@ -42,34 +42,34 @@ export const api = {
 
   // Explorer
   listDatabases: (connId) => request(`/explorer/databases?connId=${connId || ''}`),
-  listSchemas: (connId, database) => request(`/explorer/schemas?connId=${connId || ''}&database=${database || ''}`),
-  listTables: (connId, schema) => request(`/explorer/tables?connId=${connId || ''}&schema=${schema || ''}`),
+  listSchemas: (connId, database) => request(`/explorer/schemas?connId=${connId || ''}&database=${encodeURIComponent(database || '')}`),
+  listTables: (connId, schema) => request(`/explorer/tables?connId=${connId || ''}&schema=${encodeURIComponent(schema || '')}`),
   getTableDetails: (connId, schema, table) => {
     const actualTable = table !== undefined ? table : schema;
     const actualSchema = table !== undefined ? schema : '';
-    return request(`/explorer/tables/${actualTable}/details?connId=${connId || ''}&schema=${actualSchema || ''}`);
+    return request(`/explorer/tables/${encodeURIComponent(actualTable)}/details?connId=${connId || ''}&schema=${encodeURIComponent(actualSchema || '')}`);
   },
   getTableSchema: (connId, schema, table) => {
     const actualTable = table !== undefined ? table : schema;
     const actualSchema = table !== undefined ? schema : '';
-    return request(`/explorer/tables/${actualTable}/details?connId=${connId || ''}&schema=${actualSchema || ''}`);
+    return request(`/explorer/tables/${encodeURIComponent(actualTable)}/details?connId=${connId || ''}&schema=${encodeURIComponent(actualSchema || '')}`);
   },
   listColumns: (connId, schema, table) => {
     const actualTable = table !== undefined ? table : schema;
     const actualSchema = table !== undefined ? schema : '';
-    return request(`/explorer/columns/${actualTable}?connId=${connId || ''}&schema=${actualSchema || ''}`);
+    return request(`/explorer/columns/${encodeURIComponent(actualTable)}?connId=${connId || ''}&schema=${encodeURIComponent(actualSchema || '')}`);
   },
   listIndexes: (connId, schema, table) => {
     const actualTable = table !== undefined ? table : schema;
     const actualSchema = table !== undefined ? schema : '';
-    return request(`/explorer/indexes/${actualTable}?connId=${connId || ''}&schema=${actualSchema || ''}`);
+    return request(`/explorer/indexes/${encodeURIComponent(actualTable)}?connId=${connId || ''}&schema=${encodeURIComponent(actualSchema || '')}`);
   },
   listForeignKeys: (connId, schema, table) => {
     const actualTable = table !== undefined ? table : schema;
     const actualSchema = table !== undefined ? schema : '';
-    return request(`/explorer/foreign-keys/${actualTable}?connId=${connId || ''}&schema=${actualSchema || ''}`);
+    return request(`/explorer/foreign-keys/${encodeURIComponent(actualTable)}?connId=${connId || ''}&schema=${encodeURIComponent(actualSchema || '')}`);
   },
-  listViews: (connId, schema) => request(`/explorer/views?connId=${connId || ''}&schema=${schema || ''}`),
+  listViews: (connId, schema) => request(`/explorer/views?connId=${connId || ''}&schema=${encodeURIComponent(schema || '')}`),
 
   // Query
   executeQuery: (connId, query) => request('/query/execute', { method: 'POST', body: JSON.stringify({ connectionId: connId, query }) }),
@@ -119,8 +119,8 @@ export const api = {
   },
 
   // ERD
-  generateERD: (connId, schema = '') => request(`/erd/generate?connId=${connId || ''}&schema=${schema || ''}`),
-  getErdGraph: (connId, schema = '') => request(`/erd/generate?connId=${connId || ''}&schema=${schema || ''}`),
+  generateERD: (connId, schema = '') => request(`/erd/generate?connId=${connId || ''}&schema=${encodeURIComponent(schema || '')}`),
+  getErdGraph: (connId, schema = '') => request(`/erd/generate?connId=${connId || ''}&schema=${encodeURIComponent(schema || '')}`),
 
   // Project
   detectProject: (path) => request(`/project/detect?path=${encodeURIComponent(path || '.')}`),

@@ -76,6 +76,12 @@ func (h *ExplorerHandler) GetTableDetails(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	table := c.Params("table")
+	if table == "" {
+		table = c.Query("table")
+	}
+	if table == "" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "table parameter is required"})
+	}
 	schema := c.Query("schema")
 	res, err := h.explorerSvc.GetTableDetails(c.Context(), conn, schema, table)
 	if err != nil {
@@ -90,6 +96,12 @@ func (h *ExplorerHandler) ListColumns(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	table := c.Params("table")
+	if table == "" {
+		table = c.Query("table")
+	}
+	if table == "" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "table parameter is required"})
+	}
 	schema := c.Query("schema")
 	res, err := h.explorerSvc.GetColumns(c.Context(), conn, schema, table)
 	if err != nil {
@@ -104,6 +116,12 @@ func (h *ExplorerHandler) ListIndexes(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	table := c.Params("table")
+	if table == "" {
+		table = c.Query("table")
+	}
+	if table == "" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "table parameter is required"})
+	}
 	schema := c.Query("schema")
 	res, err := h.explorerSvc.GetIndexes(c.Context(), conn, schema, table)
 	if err != nil {
@@ -118,6 +136,12 @@ func (h *ExplorerHandler) ListForeignKeys(c *fiber.Ctx) error {
 		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	table := c.Params("table")
+	if table == "" {
+		table = c.Query("table")
+	}
+	if table == "" {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": "table parameter is required"})
+	}
 	schema := c.Query("schema")
 	res, err := h.explorerSvc.GetForeignKeys(c.Context(), conn, schema, table)
 	if err != nil {

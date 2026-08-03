@@ -203,29 +203,69 @@ func (c *Connector) ListIndexes(ctx context.Context, schema, table string) ([]ex
 		schema = "public"
 	}
 	querySQL := `
-	SELECT indexname, indexdef
-	FROM pg_indexes
-	WHERE schemaname = $1 AND tablename = $2;
+	SELECT
+		i.relname AS index_name,
+		ix.indisunique AS is_unique,
+		ix.indisprimary AS is_primary,
+		am.amname AS index_type,
+		COALESCE(string_agg(a.attname, ',' ORDER BY k.ord), '') AS columns
+	FROM pg_catalog.pg_index ix
+	JOIN pg_catalog.pg_class t ON t.oid = ix.indrelid
+	JOIN pg_catalog.pg_class i ON i.oid = ix.indexrelid
+	JOIN pg_catalog.pg_namespace ns ON ns.oid = t.relnamespace
+	JOIN pg_catalog.pg_am am ON am.oid = i.relam
+	JOIN unnest(ix.indkey) WITH ORDINALITY AS k(attnum, ord) ON true
+	LEFT JOIN pg_catalog.pg_attribute a ON a.attrelid = t.oid AND a.attnum = k.attnum
+	WHERE ns.nspname = $1 AND t.relname = $2
+	GROUP BY i.relname, ix.indisunique, ix.indisprimary, am.amname
+	ORDER BY i.relname;
 	`
 	rows, err := c.db.QueryContext(ctx, querySQL, schema, table)
 	if err != nil {
-		return nil, err
+		// Fallback to simpler pg_indexes query if complex catalog query fails
+		fallbackSQL := `SELECT indexname, indexdef FROM pg_indexes WHERE schemaname = $1 AND tablename = $2;`
+		fbRows, fbErr := c.db.QueryContext(ctx, fallbackSQL, schema, table)
+		if fbErr != nil {
+			return nil, err
+		}
+		defer fbRows.Close()
+
+		var indexes []explorer.Index
+		for fbRows.Next() {
+			var name, def string
+			if err := fbRows.Scan(&name, &def); err != nil {
+				return nil, err
+			}
+			isUnique := strings.Contains(strings.ToUpper(def), "UNIQUE INDEX")
+			isPrimary := strings.HasSuffix(name, "_pkey") || strings.Contains(name, "pkey")
+			indexes = append(indexes, explorer.Index{
+				Name:      name,
+				IsUnique:  isUnique,
+				IsPrimary: isPrimary,
+				Type:      "BTREE",
+			})
+		}
+		return indexes, fbRows.Err()
 	}
 	defer rows.Close()
 
 	var indexes []explorer.Index
 	for rows.Next() {
-		var name, def string
-		if err := rows.Scan(&name, &def); err != nil {
+		var name, iType, colsStr string
+		var isUnique, isPrimary bool
+		if err := rows.Scan(&name, &isUnique, &isPrimary, &iType, &colsStr); err != nil {
 			return nil, err
 		}
-		isUnique := strings.Contains(strings.ToUpper(def), "UNIQUE INDEX")
-		isPrimary := strings.HasSuffix(name, "_pkey") || strings.Contains(name, "pkey")
+		var cols []string
+		if colsStr != "" {
+			cols = strings.Split(colsStr, ",")
+		}
 		indexes = append(indexes, explorer.Index{
 			Name:      name,
+			Columns:   cols,
 			IsUnique:  isUnique,
 			IsPrimary: isPrimary,
-			Type:      "BTREE",
+			Type:      strings.ToUpper(iType),
 		})
 	}
 	return indexes, rows.Err()
@@ -237,31 +277,83 @@ func (c *Connector) ListForeignKeys(ctx context.Context, schema, table string) (
 	}
 	querySQL := `
 	SELECT
-		tc.constraint_name,
-		kcu.column_name,
-		ccu.table_name AS foreign_table_name,
-		ccu.column_name AS foreign_column_name,
-		rc.update_rule,
-		rc.delete_rule
-	FROM information_schema.table_constraints AS tc
-	JOIN information_schema.key_column_usage AS kcu
-		ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
-	JOIN information_schema.constraint_column_usage AS ccu
-		ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema
-	JOIN information_schema.referential_constraints AS rc
-		ON rc.constraint_name = tc.constraint_name
-	WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = $1 AND tc.table_name = $2;
+		c.conname AS name,
+		a.attname AS column_name,
+		clf.relname AS foreign_table_name,
+		af.attname AS foreign_column_name,
+		COALESCE(nsf.nspname, '') AS foreign_schema_name,
+		CASE c.confupdtype
+			WHEN 'a' THEN 'NO ACTION'
+			WHEN 'r' THEN 'RESTRICT'
+			WHEN 'c' THEN 'CASCADE'
+			WHEN 'n' THEN 'SET NULL'
+			WHEN 'd' THEN 'SET DEFAULT'
+			ELSE 'NO ACTION'
+		END AS update_rule,
+		CASE c.confdeltype
+			WHEN 'a' THEN 'NO ACTION'
+			WHEN 'r' THEN 'RESTRICT'
+			WHEN 'c' THEN 'CASCADE'
+			WHEN 'n' THEN 'SET NULL'
+			WHEN 'd' THEN 'SET DEFAULT'
+			ELSE 'NO ACTION'
+		END AS delete_rule
+	FROM pg_catalog.pg_constraint c
+	JOIN pg_catalog.pg_class cl ON cl.oid = c.conrelid
+	JOIN pg_catalog.pg_namespace ns ON ns.oid = cl.relnamespace
+	JOIN pg_catalog.pg_class clf ON clf.oid = c.confrelid
+	JOIN pg_catalog.pg_namespace nsf ON nsf.oid = clf.relnamespace
+	JOIN unnest(c.conkey) WITH ORDINALITY AS k(attnum, ord) ON true
+	JOIN pg_catalog.pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = k.attnum
+	JOIN unnest(c.confkey) WITH ORDINALITY AS f(attnum, ord) ON k.ord = f.ord
+	JOIN pg_catalog.pg_attribute af ON af.attrelid = c.confrelid AND af.attnum = f.attnum
+	WHERE c.contype = 'f'
+	  AND ns.nspname = $1
+	  AND cl.relname = $2
+	ORDER BY c.conname, k.ord;
 	`
 	rows, err := c.db.QueryContext(ctx, querySQL, schema, table)
 	if err != nil {
-		return nil, err
+		// Fallback to information_schema if pg_catalog unnest isn't supported
+		fallbackSQL := `
+		SELECT
+			tc.constraint_name,
+			kcu.column_name,
+			ccu.table_name AS foreign_table_name,
+			ccu.column_name AS foreign_column_name,
+			COALESCE(rc.update_rule, 'NO ACTION'),
+			COALESCE(rc.delete_rule, 'NO ACTION')
+		FROM information_schema.table_constraints AS tc
+		JOIN information_schema.key_column_usage AS kcu
+			ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+		JOIN information_schema.referential_constraints AS rc
+			ON rc.constraint_name = tc.constraint_name AND rc.constraint_schema = tc.table_schema
+		JOIN information_schema.constraint_column_usage AS ccu
+			ON ccu.constraint_name = tc.constraint_name AND ccu.constraint_schema = tc.table_schema
+		WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = $1 AND tc.table_name = $2;
+		`
+		fbRows, fbErr := c.db.QueryContext(ctx, fallbackSQL, schema, table)
+		if fbErr != nil {
+			return nil, err
+		}
+		defer fbRows.Close()
+
+		var fks []explorer.ForeignKey
+		for fbRows.Next() {
+			var fk explorer.ForeignKey
+			if err := fbRows.Scan(&fk.Name, &fk.Column, &fk.RefTable, &fk.RefColumn, &fk.OnUpdate, &fk.OnDelete); err != nil {
+				return nil, err
+			}
+			fks = append(fks, fk)
+		}
+		return fks, fbRows.Err()
 	}
 	defer rows.Close()
 
 	var fks []explorer.ForeignKey
 	for rows.Next() {
 		var fk explorer.ForeignKey
-		if err := rows.Scan(&fk.Name, &fk.Column, &fk.RefTable, &fk.RefColumn, &fk.OnUpdate, &fk.OnDelete); err != nil {
+		if err := rows.Scan(&fk.Name, &fk.Column, &fk.RefTable, &fk.RefColumn, &fk.RefSchema, &fk.OnUpdate, &fk.OnDelete); err != nil {
 			return nil, err
 		}
 		fks = append(fks, fk)

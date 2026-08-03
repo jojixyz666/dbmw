@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-03
+
+### Fixed
+- **Schema Explorer Foreign Keys & Indexes**: Fixed critical issue where foreign keys and indexes always showed zero or empty in the Schema tab due to:
+  - Handler/schema resolution mismatches between frontend API calls and backend parameter handling
+  - PostgreSQL information_schema queries failing to return foreign key/column usage data in certain schema/configuration scenarios  
+  - Frontend API calls not passing schema parameter correctly to backend endpoints
+  - Missing fallback mechanisms when primary data endpoints returned empty results
+
+### Added
+- **Robust PostgreSQL Foreign Key Detection**: Implemented pg_catalog.pg_constraint-based queries with proper ordinal key mapping for accurate multi-column foreign key detection, including referenced schema and ON UPDATE/ON DELETE actions
+- **Enhanced PostgreSQL Index Detection**: Upgraded to use pg_catalog.pg_index for accurate index column extraction and type detection
+- **Improved MySQL Foreign Key Detection**: Added JOIN with information_schema.referential_constraints to retrieve UPDATE_RULE and DELETE_RULE
+- **Frontend Sidebar Schema Explorer**: Completely rebuilt with reactive data loading, fallback endpoints, and rich UI displaying:
+  - Detailed column information (type, nullable, defaults, PK/FK indicators)
+  - Indexes with column lists and type badges (BTREE, HASH, GIN, etc.)
+  - Foreign keys with source→target navigation, constraint details, and action badges
+
+### Changed
+- Bumped application version to 0.1.1
+
 ## [0.1.0] - 2026-08-03
 
 ### Fixed
