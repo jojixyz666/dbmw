@@ -1,4 +1,4 @@
-# Architecture — DBMW v0.0.1
+# Architecture — DBMW v0.1.0
 
 This document outlines the architectural blueprint of DBMW.
 

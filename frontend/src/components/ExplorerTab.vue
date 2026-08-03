@@ -1,21 +1,19 @@
 <template>
   <div class="h-full flex flex-col bg-surface overflow-hidden">
     <!-- Header -->
-    <header class="h-[72px] px-6 border-b border-outline-variant flex items-center justify-between bg-surface flex-shrink-0">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+    <header class="h-[72px] px-6 border-b border-outline-variant flex items-center justify-between bg-surface flex-shrink-0 flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center text-primary shadow-sm flex-shrink-0">
           <span class="material-symbols-outlined text-2xl">schema</span>
         </div>
-        <div>
+        <div class="flex flex-col">
           <div class="flex items-center gap-2">
-            <h2 class="text-sm font-bold text-on-surface font-mono tracking-tight m-0">
-              {{ store.selectedTable || 'Select a Table' }}
-            </h2>
-            <span v-if="store.selectedTable" class="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded border border-primary/30">
+            <TableSelector placeholder="Select a Table to Inspect..." variant="header" />
+            <span v-if="store.selectedTable" class="px-2 py-0.5 bg-primary/20 text-primary text-[10px] font-bold uppercase rounded border border-primary/30 hidden sm:inline">
               SCHEMA
             </span>
           </div>
-          <p class="text-xs text-on-surface-variant m-0">Structure, Columns, Indexes, and Constraints</p>
+          <p class="text-xs text-on-surface-variant m-0 mt-0.5">Structure, Columns, Indexes, and Constraints</p>
         </div>
       </div>
 
@@ -24,7 +22,14 @@
           @click="store.activeTab = 'data'"
           class="h-9 px-3.5 bg-primary hover:bg-primary-container text-on-primary rounded text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm active:scale-95"
         >
-          <span class="material-symbols-outlined text-[16px]">table_chart</span> Browse Table Data
+          <span class="material-symbols-outlined text-[16px]">table_chart</span> Browse Data
+        </button>
+        <button
+          @click="store.queryTable(store.selectedTable)"
+          class="h-9 px-3 bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-sm"
+          title="Query Table in SQL Console"
+        >
+          <span class="material-symbols-outlined text-[16px]">terminal</span> Query SQL
         </button>
         <button
           @click="loadDetails"
@@ -37,10 +42,14 @@
     </header>
 
     <!-- Empty State -->
-    <div v-if="!store.selectedTable" class="flex-1 flex flex-col items-center justify-center text-on-surface-variant p-8 text-center">
-      <span class="material-symbols-outlined text-5xl mb-3 text-primary/40">search</span>
-      <h3 class="text-sm font-bold text-on-surface mb-1">No Table Selected</h3>
-      <p class="text-xs max-w-sm text-on-surface-variant font-mono leading-relaxed">Pick a table from the sidebar navigation to inspect its columns, primary keys, data types, and index constraints.</p>
+    <div v-if="!store.selectedTable" class="flex-1 overflow-auto flex flex-col">
+      <TableSelectorEmptyState
+        title="Select a Table to Inspect Schema"
+        subtitle="Pick any database table or view to inspect columns, data types, primary keys, indexes, and foreign keys"
+        icon="schema"
+        defaultTab="explorer"
+        @select="loadDetails"
+      />
     </div>
 
     <!-- Main Details View -->
@@ -78,78 +87,84 @@
                     <span v-if="col.isPrimaryKey" class="material-symbols-outlined text-amber-400 text-sm" title="Primary Key">key</span>
                     {{ col.name }}
                   </td>
-                  <td class="py-2.5 px-4 text-primary font-semibold">{{ col.dataType }}</td>
+                  <td class="py-2.5 px-4 text-primary font-bold">{{ col.dataType }}</td>
                   <td class="py-2.5 px-4">
-                    <span v-if="col.isPrimaryKey" class="px-2 py-0.5 bg-amber-500/20 text-amber-600 dark:text-amber-300 border border-amber-500/30 rounded text-[10px] uppercase font-bold">
-                      PK
-                    </span>
-                    <span v-else class="text-on-surface-variant">-</span>
-                  </td>
-                  <td class="py-2.5 px-4">
-                    <span :class="col.isNullable ? 'text-amber-500 font-bold' : 'text-on-surface-variant'">
-                      {{ col.isNullable ? 'YES' : 'NO' }}
+                    <span
+                      class="px-2 py-0.5 rounded text-[10px] font-bold"
+                      :class="col.isPrimaryKey ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'text-on-surface-variant'"
+                    >
+                      {{ col.isPrimaryKey ? 'YES' : 'NO' }}
                     </span>
                   </td>
-                  <td class="py-2.5 px-4 text-on-surface-variant">{{ col.defaultValue || '—' }}</td>
-                  <td class="py-2.5 px-4 text-on-surface-variant">{{ col.extra || '—' }}</td>
+                  <td class="py-2.5 px-4 text-on-surface-variant">{{ col.isNullable ? 'YES' : 'NO' }}</td>
+                  <td class="py-2.5 px-4 text-on-surface-variant">{{ col.defaultValue || 'NULL' }}</td>
+                  <td class="py-2.5 px-4 text-on-surface-variant">{{ col.extra || '-' }}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- Indexes & Foreign Keys Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Indexes -->
+        <!-- Indexes and Keys Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- Indexes Section -->
           <div class="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-            <div class="px-5 py-3.5 border-b border-outline-variant bg-surface-container-low">
-              <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider font-mono m-0 flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm text-primary">bolt</span> Indexes ({{ indexes.length }})
+            <div class="px-5 py-3.5 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
+              <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider font-mono flex items-center gap-2 m-0">
+                <span class="material-symbols-outlined text-sm text-primary">grain</span> Indexes ({{ indexes.length }})
               </h3>
             </div>
-            <div class="p-4">
-              <div v-if="indexes.length === 0" class="text-center py-6 text-on-surface-variant text-xs italic font-mono">
-                No indexes defined on table
+            <div class="p-4 font-mono">
+              <div v-if="indexes.length === 0" class="text-xs text-on-surface-variant italic">
+                No custom indexes defined
               </div>
-              <div v-else class="space-y-2 font-mono">
+              <div v-else class="space-y-2">
                 <div
                   v-for="idx in indexes"
                   :key="idx.name"
-                  class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant flex items-center justify-between"
+                  class="p-3 bg-surface-container-lowest border border-outline-variant/60 rounded-lg flex items-center justify-between"
                 >
                   <div>
-                    <div class="text-xs font-bold text-on-surface flex items-center gap-2">
-                      <span class="material-symbols-outlined text-primary text-sm">bolt</span> {{ idx.name }}
-                      <span v-if="idx.isUnique" class="px-1.5 py-0.2 bg-blue-500/20 text-blue-600 dark:text-blue-300 rounded text-[9px] uppercase font-bold">UNIQUE</span>
+                    <div class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                      <span v-if="idx.isPrimary" class="material-symbols-outlined text-amber-400 text-xs">key</span>
+                      {{ idx.name }}
                     </div>
-                    <div class="text-[11px] text-on-surface-variant mt-1">
-                      Columns: <span class="text-primary font-bold">{{ idx.columns?.join(', ') }}</span>
+                    <div class="text-[10px] text-on-surface-variant mt-0.5">
+                      Columns: <span class="text-primary font-semibold">{{ (idx.columns || []).join(', ') }}</span>
                     </div>
                   </div>
+                  <span
+                    v-if="idx.isUnique"
+                    class="px-1.5 py-0.5 text-[9px] bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20 font-bold"
+                  >
+                    UNIQUE
+                  </span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Foreign Keys -->
+          <!-- Foreign Keys Section -->
           <div class="bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm">
-            <div class="px-5 py-3.5 border-b border-outline-variant bg-surface-container-low">
-              <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider font-mono m-0 flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm text-primary">link</span> Foreign Keys ({{ foreignKeys.length }})
+            <div class="px-5 py-3.5 border-b border-outline-variant bg-surface-container-low flex items-center justify-between">
+              <h3 class="text-xs font-bold text-on-surface uppercase tracking-wider font-mono flex items-center gap-2 m-0">
+                <span class="material-symbols-outlined text-sm text-primary">account_tree</span> Foreign Keys ({{ foreignKeys.length }})
               </h3>
             </div>
-            <div class="p-4">
-              <div v-if="foreignKeys.length === 0" class="text-center py-6 text-on-surface-variant text-xs italic font-mono">
-                No foreign keys linked
+            <div class="p-4 font-mono">
+              <div v-if="foreignKeys.length === 0" class="text-xs text-on-surface-variant italic">
+                No foreign keys mapped
               </div>
-              <div v-else class="space-y-2 font-mono">
+              <div v-else class="space-y-2">
                 <div
                   v-for="fk in foreignKeys"
                   :key="fk.name"
-                  class="p-3 bg-surface-container-lowest rounded-lg border border-outline-variant space-y-1"
+                  class="p-3 bg-surface-container-lowest border border-outline-variant/60 rounded-lg space-y-1"
                 >
                   <div class="text-xs font-bold text-on-surface flex items-center gap-2">
-                    <span class="material-symbols-outlined text-primary text-sm">link</span> {{ fk.columnName }} ➔ <span class="text-primary">{{ fk.referencedTable }}.{{ fk.referencedColumn }}</span>
+                    <span class="material-symbols-outlined text-primary text-sm">link</span>
+                    {{ fk.column || fk.columnName }} ➔
+                    <span class="text-primary">{{ fk.refTable || fk.referencedTable }}.{{ fk.refColumn || fk.referencedColumn }}</span>
                   </div>
                   <div class="text-[10px] text-on-surface-variant">Constraint: {{ fk.name }}</div>
                 </div>
@@ -166,6 +181,8 @@
 import { ref, watch } from 'vue';
 import { useAppStore } from '../stores/app';
 import { api } from '../api';
+import TableSelector from './TableSelector.vue';
+import TableSelectorEmptyState from './TableSelectorEmptyState.vue';
 
 const store = useAppStore();
 const columns = ref([]);

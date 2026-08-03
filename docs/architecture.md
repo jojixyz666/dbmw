@@ -1,4 +1,4 @@
-# Architecture Guide — DBMW v0.0.1
+# Architecture Guide — DBMW v0.1.0
 
 DBMW follows **Hexagonal Architecture (Ports and Adapters)** combined with a lightweight **Domain-Driven Design (DDD-Lite)** organization.
 

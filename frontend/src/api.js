@@ -34,6 +34,8 @@ export const api = {
   listConnections: () => request('/connections'),
   getConnection: (id) => request(`/connections/${id}`),
   saveConnection: (cfg) => request('/connections', { method: 'POST', body: JSON.stringify(cfg) }),
+  createConnection: (cfg) => request('/connections', { method: 'POST', body: JSON.stringify(cfg) }),
+  updateConnection: (id, cfg) => request('/connections', { method: 'POST', body: JSON.stringify(cfg) }),
   deleteConnection: (id) => request(`/connections/${id}`, { method: 'DELETE' }),
   testConnection: (cfg) => request('/connections/test', { method: 'POST', body: JSON.stringify(cfg) }),
   setActiveConnection: (id) => request('/connections/active', { method: 'POST', body: JSON.stringify({ id }) }),
@@ -42,10 +44,31 @@ export const api = {
   listDatabases: (connId) => request(`/explorer/databases?connId=${connId || ''}`),
   listSchemas: (connId, database) => request(`/explorer/schemas?connId=${connId || ''}&database=${database || ''}`),
   listTables: (connId, schema) => request(`/explorer/tables?connId=${connId || ''}&schema=${schema || ''}`),
-  getTableDetails: (connId, schema, table) => request(`/explorer/tables/${table}/details?connId=${connId || ''}&schema=${schema || ''}`),
-  listColumns: (connId, schema, table) => request(`/explorer/columns/${table}?connId=${connId || ''}&schema=${schema || ''}`),
-  listIndexes: (connId, schema, table) => request(`/explorer/indexes/${table}?connId=${connId || ''}&schema=${schema || ''}`),
-  listForeignKeys: (connId, schema, table) => request(`/explorer/foreign-keys/${table}?connId=${connId || ''}&schema=${schema || ''}`),
+  getTableDetails: (connId, schema, table) => {
+    const actualTable = table !== undefined ? table : schema;
+    const actualSchema = table !== undefined ? schema : '';
+    return request(`/explorer/tables/${actualTable}/details?connId=${connId || ''}&schema=${actualSchema || ''}`);
+  },
+  getTableSchema: (connId, schema, table) => {
+    const actualTable = table !== undefined ? table : schema;
+    const actualSchema = table !== undefined ? schema : '';
+    return request(`/explorer/tables/${actualTable}/details?connId=${connId || ''}&schema=${actualSchema || ''}`);
+  },
+  listColumns: (connId, schema, table) => {
+    const actualTable = table !== undefined ? table : schema;
+    const actualSchema = table !== undefined ? schema : '';
+    return request(`/explorer/columns/${actualTable}?connId=${connId || ''}&schema=${actualSchema || ''}`);
+  },
+  listIndexes: (connId, schema, table) => {
+    const actualTable = table !== undefined ? table : schema;
+    const actualSchema = table !== undefined ? schema : '';
+    return request(`/explorer/indexes/${actualTable}?connId=${connId || ''}&schema=${actualSchema || ''}`);
+  },
+  listForeignKeys: (connId, schema, table) => {
+    const actualTable = table !== undefined ? table : schema;
+    const actualSchema = table !== undefined ? schema : '';
+    return request(`/explorer/foreign-keys/${actualTable}?connId=${connId || ''}&schema=${actualSchema || ''}`);
+  },
   listViews: (connId, schema) => request(`/explorer/views?connId=${connId || ''}&schema=${schema || ''}`),
 
   // Query
@@ -56,13 +79,48 @@ export const api = {
   exportJSON: (result) => request('/query/export/json', { method: 'POST', body: JSON.stringify(result) }),
 
   // Data
-  browseData: (connId, schema, table, opts) => request(`/data/browse/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify(opts) }),
-  insertRow: (connId, schema, table, values) => request(`/data/insert/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify(values) }),
-  updateRow: (connId, schema, table, primaryKey, values) => request(`/data/update/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify({ primaryKey, values }) }),
-  deleteRow: (connId, schema, table, primaryKey) => request(`/data/delete/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify(primaryKey) }),
+  browseData: (connId, schema, table, opts = {}) => {
+    const actualTable = table !== undefined ? table : schema;
+    const actualSchema = table !== undefined ? schema : '';
+    return request(`/data/browse/${actualTable}?connId=${connId || ''}&schema=${actualSchema || ''}`, { method: 'POST', body: JSON.stringify(opts) });
+  },
+  getTableRows: (connId, schema, table, opts = {}) => {
+    if (typeof table === 'object' && table !== null) {
+      opts = table;
+      table = schema;
+      schema = '';
+    }
+    return request(`/data/browse/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify(opts) });
+  },
+  insertRow: (connId, schema, table, values = {}) => {
+    if (typeof table === 'object' && table !== null) {
+      values = table;
+      table = schema;
+      schema = '';
+    }
+    return request(`/data/insert/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify(values) });
+  },
+  updateRow: (connId, schema, table, pk = {}, values = {}) => {
+    if (typeof table === 'object' && table !== null) {
+      const payload = table;
+      table = schema;
+      schema = '';
+      return request(`/data/update/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify(payload) });
+    }
+    return request(`/data/update/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify({ primaryKey: pk, values }) });
+  },
+  deleteRow: (connId, schema, table, pk = {}) => {
+    if (typeof table === 'object' && table !== null) {
+      pk = table;
+      table = schema;
+      schema = '';
+    }
+    return request(`/data/delete/${table}?connId=${connId || ''}&schema=${schema || ''}`, { method: 'POST', body: JSON.stringify(pk) });
+  },
 
   // ERD
-  generateERD: (connId, schema) => request(`/erd/generate?connId=${connId || ''}&schema=${schema || ''}`),
+  generateERD: (connId, schema = '') => request(`/erd/generate?connId=${connId || ''}&schema=${schema || ''}`),
+  getErdGraph: (connId, schema = '') => request(`/erd/generate?connId=${connId || ''}&schema=${schema || ''}`),
 
   // Project
   detectProject: (path) => request(`/project/detect?path=${encodeURIComponent(path || '.')}`),

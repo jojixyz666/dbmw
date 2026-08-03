@@ -50,7 +50,7 @@ func SetupRouter(
 	api := app.Group("/api")
 
 	api.Get("/health", func(c *fiber.Ctx) error {
-		return c.JSON(fiber.Map{"status": "ok", "version": "0.0.2"})
+		return c.JSON(fiber.Map{"status": "ok", "version": "0.1.0"})
 	})
 
 	// Config

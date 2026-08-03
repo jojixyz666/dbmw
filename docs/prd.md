@@ -1,7 +1,7 @@
-# Product Requirements Document (PRD) — DBMW v0.0.1
+# Product Requirements Document (PRD) — DBMW v0.1.0
 
 - **Product Name:** DBMW (Database Management Workspace)
-- **Version:** v0.0.1 Foundation Release
+- **Version:** v0.1.0
 - **Status:** Complete / Active
 
 ---
@@ -28,7 +28,7 @@ It provides a developer-friendly alternative to bulky desktop database clients (
 
 ---
 
-## 3. Explicit Non-Goals (Out of Scope for v0.0.1)
+## 3. Explicit Non-Goals (Out of Scope for v0.1.0)
 
 - Multi-tenant user accounts and authentication.
 - Cloud storage synchronization or telemetry tracking.

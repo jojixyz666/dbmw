@@ -2,24 +2,23 @@
   <div class="h-full flex flex-col bg-surface overflow-hidden">
     <!-- Top Action Bar -->
     <header class="h-[72px] px-6 border-b border-outline-variant flex items-center justify-between bg-surface flex-wrap gap-3 flex-shrink-0">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center text-primary shadow-sm flex-shrink-0">
           <span class="material-symbols-outlined text-2xl">table_chart</span>
         </div>
-        <div>
+        <div class="flex flex-col">
           <div class="flex items-center gap-2">
-            <h2 class="text-sm font-bold text-on-surface font-mono tracking-tight m-0">
-              {{ store.selectedTable || 'Select a table' }}
-            </h2>
-            <span v-if="totalRows >= 0" class="text-xs text-primary font-mono bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold">
+            <!-- Accessible Table Selector Dropdown -->
+            <TableSelector placeholder="Select a Table to Browse..." variant="header" />
+            <span v-if="store.selectedTable && totalRows >= 0" class="text-xs text-primary font-mono bg-primary/10 px-2 py-0.5 rounded border border-primary/20 font-bold hidden sm:inline">
               {{ totalRows }} rows
             </span>
           </div>
-          <p class="text-xs text-on-surface-variant m-0">Inline editable spreadsheet data browser</p>
+          <p class="text-xs text-on-surface-variant m-0 mt-0.5">Inline editable spreadsheet data browser</p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2" v-if="store.selectedTable">
         <div class="relative">
           <span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px]">search</span>
           <input
@@ -57,12 +56,15 @@
     </header>
 
     <!-- Data Table Container -->
-    <div class="flex-1 overflow-auto bg-surface-container-lowest relative">
-      <div v-if="!store.selectedTable" class="flex-1 h-full flex flex-col items-center justify-center text-on-surface-variant p-8 text-center">
-        <span class="material-symbols-outlined text-5xl mb-3 text-primary/40">table_chart</span>
-        <h3 class="text-sm font-bold text-on-surface mb-1">No Table Selected</h3>
-        <p class="text-xs max-w-sm text-on-surface-variant leading-relaxed font-mono">Select a table from the sidebar to inspect records, sort columns, filter rows, and edit values inline.</p>
-      </div>
+    <div class="flex-1 overflow-auto bg-surface-container-lowest relative flex flex-col">
+      <TableSelectorEmptyState
+        v-if="!store.selectedTable"
+        title="Select a Table to Browse Data"
+        subtitle="Choose any database table or view to inspect records, sort columns, and edit values"
+        icon="table_chart"
+        defaultTab="data"
+        @select="fetchRows(1)"
+      />
 
       <div v-else-if="loading" class="flex items-center justify-center h-full text-on-surface-variant text-xs font-mono gap-2">
         <span class="material-symbols-outlined text-primary text-xl animate-spin">sync</span> Loading table records...
@@ -231,6 +233,8 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { useAppStore } from '../stores/app';
 import { api } from '../api';
+import TableSelector from './TableSelector.vue';
+import TableSelectorEmptyState from './TableSelectorEmptyState.vue';
 
 const store = useAppStore();
 const rows = ref([]);
@@ -259,16 +263,15 @@ async function fetchRows(p = 1) {
   page.value = p;
   loading.value = true;
   try {
-    const res = await api.getTableRows(store.activeConnectionId, store.selectedTable, {
+    const res = await api.getTableRows(store.activeConnectionId, store.currentSchema, store.selectedTable, {
       page: page.value,
       pageSize: pageSize.value,
-      search: searchTerm.value,
-      sortColumn: sortBy.value?.column,
-      sortDirection: sortBy.value?.direction,
+      searchTerm: searchTerm.value || undefined,
+      sortBy: sortBy.value ? { column: sortBy.value.column, direction: sortBy.value.direction } : undefined,
     });
     rows.value = res.rows || [];
     columns.value = res.columns || [];
-    pkColumns.value = res.primaryKeys || [];
+    pkColumns.value = res.primaryKey || [];
     totalRows.value = res.totalRows || 0;
   } catch (err) {
     store.addToast(err.message || 'Failed to fetch rows', 'error');
@@ -314,10 +317,9 @@ async function saveEdit() {
   if (String(oldValue) === String(newValue)) return;
 
   try {
-    await api.updateRow(store.activeConnectionId, store.selectedTable, {
-      primaryKeys: getPkValues(row),
-      column: col,
-      value: newValue,
+    await api.updateRow(store.activeConnectionId, store.currentSchema, store.selectedTable, {
+      primaryKey: getPkValues(row),
+      values: { [col]: newValue },
     });
     row[col] = newValue;
     store.addToast(`Updated ${col} successfully`);
@@ -340,7 +342,7 @@ function getPkValues(row) {
 async function confirmDeleteRow(row) {
   if (!confirm('Are you sure you want to delete this row?')) return;
   try {
-    await api.deleteRow(store.activeConnectionId, store.selectedTable, getPkValues(row));
+    await api.deleteRow(store.activeConnectionId, store.currentSchema, store.selectedTable, getPkValues(row));
     store.addToast('Row deleted successfully');
     fetchRows(page.value);
   } catch (err) {
@@ -356,7 +358,7 @@ function openInsertModal() {
 
 async function saveNewRecord() {
   try {
-    await api.insertRow(store.activeConnectionId, store.selectedTable, newRowData.value);
+    await api.insertRow(store.activeConnectionId, store.currentSchema, store.selectedTable, newRowData.value);
     showInsertModal.value = false;
     store.addToast('Record inserted successfully');
     fetchRows(1);

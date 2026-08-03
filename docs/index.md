@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![DBMW Banner](https://img.shields.io/badge/DBMW-v0.0.1%20Foundation-10b981?style=for-the-badge)
+![DBMW Banner](https://img.shields.io/badge/DBMW-v0.1.0-10b981?style=for-the-badge)
 [![Go Version](https://img.shields.io/badge/Go-1.24%2B-00ADD8?style=for-the-badge&logo=go&logoColor=white)](https://golang.org)
 [![Vue Version](https://img.shields.io/badge/Vue.js-3.x-42b883?style=for-the-badge&logo=vuedotjs&logoColor=white)](https://vuejs.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)

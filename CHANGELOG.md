@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2026-08-03
+
+### Fixed
+- **Data Browser Schema Context**: Fixed critical MySQL error 1146 ("Table doesn't exist") caused by missing `schema` parameter in all Data Browser API calls (`browse`, `insert`, `update`, `delete`). The frontend now correctly passes `currentSchema` to the backend so queries target the correct database.
+- **Primary Key Detection**: Fixed field name mismatch — frontend read `primaryKeys` (plural) but backend sends `primaryKey` (singular), causing PK column indicators and row identification for update/delete to fail silently.
+- **Search & Sort Parameters**: Fixed JSON field name mismatch — frontend sent `search`, `sortColumn`, `sortDirection` but backend expects `searchTerm` and `sortBy` object with `column`/`direction`. Search and column sorting now work correctly.
+- **Inline Cell Update Payload**: Fixed update request body — frontend sent `{ column, value }` but backend expects `{ primaryKey, values }` map. Inline cell editing now works correctly.
+
+### Added
+- **Table Selector Dropdown**: Reusable `TableSelector` and `TableSelectorEmptyState` components for consistent table selection across tabs.
+- **Enhanced Sidebar**: Improved database/schema selector with connection profile card, active state indicators, and better navigation flow.
+- **Improved Explorer Tab**: Better column metadata display with enhanced schema browsing.
+- **Enhanced SQL Editor**: Improved query execution UX with better result rendering.
+- **Enhanced ERD Tab**: Improved entity-relationship diagram visualization.
+
+### Changed
+- Bumped application version to `v0.1.0` across CLI, Web server, and Frontend UI.
+- Extended API client (`api.js`) with proper schema-aware function signatures for all data operations.
+- Improved Pinia store (`app.js`) with robust database/schema/table state management and multi-database switching support.
+
 ## [0.0.2] - 2026-08-03
 
 ### Added

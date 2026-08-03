@@ -1,9 +1,9 @@
 <template>
   <div class="h-full flex flex-col bg-surface overflow-hidden relative select-none">
     <!-- Action Bar -->
-    <header class="h-[72px] px-6 border-b border-outline-variant flex items-center justify-between bg-surface z-20 flex-shrink-0">
-      <div class="flex items-center gap-4">
-        <div class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center text-primary shadow-sm">
+    <header class="h-[72px] px-6 border-b border-outline-variant flex items-center justify-between bg-surface z-20 flex-shrink-0 flex-wrap gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-center text-primary shadow-sm flex-shrink-0">
           <span class="material-symbols-outlined text-2xl">account_tree</span>
         </div>
         <div>
@@ -12,41 +12,53 @@
         </div>
       </div>
 
-      <!-- Zoom & Pan Controls -->
+      <!-- Table Focus & Zoom & Pan Controls -->
       <div class="flex items-center gap-2">
-        <button
-          @click="zoomIn"
-          class="h-9 px-3 bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded text-xs font-bold transition-colors shadow-sm"
-          title="Zoom In"
-        >
-          ＋
-        </button>
-        <span class="text-xs text-on-surface-variant font-mono w-14 text-center font-bold bg-surface-container-lowest px-2 py-1.5 rounded border border-outline-variant">{{ Math.round(zoom * 100) }}%</span>
-        <button
-          @click="zoomOut"
-          class="h-9 px-3 bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded text-xs font-bold transition-colors shadow-sm"
-          title="Zoom Out"
-        >
-          －
-        </button>
-        <button
-          @click="resetView"
-          class="h-9 px-3 bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded text-xs font-semibold transition-colors shadow-sm"
-        >
-          Reset View
-        </button>
+        <TableSelector
+          placeholder="Focus Table..."
+          variant="header"
+          @select="focusTable"
+        />
+
+        <div class="flex items-center gap-1 bg-surface-container-lowest border border-outline-variant rounded-lg p-1">
+          <button
+            @click="zoomIn"
+            class="h-7 px-2.5 bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded text-xs font-bold transition-colors shadow-sm"
+            title="Zoom In"
+          >
+            ＋
+          </button>
+          <span class="text-xs text-on-surface-variant font-mono w-12 text-center font-bold px-1">{{ Math.round(zoom * 100) }}%</span>
+          <button
+            @click="zoomOut"
+            class="h-7 px-2.5 bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded text-xs font-bold transition-colors shadow-sm"
+            title="Zoom Out"
+          >
+            －
+          </button>
+          <button
+            @click="resetView"
+            class="h-7 px-2 bg-surface-container-low hover:bg-surface-container text-on-surface border border-outline-variant rounded text-xs font-medium transition-colors shadow-sm"
+            title="Reset Canvas View"
+          >
+            Reset
+          </button>
+        </div>
+
         <button
           @click="loadGraph"
-          class="h-9 px-3.5 bg-primary hover:bg-primary-container text-on-primary rounded text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm active:scale-95"
+          class="h-9 px-2.5 text-on-surface-variant hover:text-on-surface bg-surface-container-low border border-outline-variant rounded-lg transition-colors text-xs shadow-sm flex items-center justify-center"
+          title="Reload ERD Graph"
         >
-          <span class="material-symbols-outlined text-[16px]">refresh</span> Re-layout
+          <span class="material-symbols-outlined text-[18px]">refresh</span>
         </button>
       </div>
     </header>
 
-    <!-- Canvas Container -->
+    <!-- Canvas Workspace -->
     <div
-      class="flex-1 overflow-hidden relative bg-surface-container-lowest cursor-grab active:cursor-grabbing"
+      ref="canvasRef"
+      class="flex-1 relative overflow-hidden bg-surface-container-lowest cursor-grab active:cursor-grabbing"
       @mousedown="startPan"
       @mousemove="doPanOrDrag"
       @mouseup="endPanOrDrag"
@@ -91,6 +103,7 @@
               fill="var(--color-primary)"
               font-size="10"
               font-family="monospace"
+              font-weight="bold"
               text-anchor="middle"
               class="bg-surface"
             >
@@ -108,21 +121,24 @@
             top: `${node.position.y}px`,
           }"
           @mousedown.stop="startDragNode($event, node)"
-          class="absolute w-64 bg-surface border border-outline-variant rounded-xl shadow-xl overflow-hidden cursor-move transition-all hover:border-primary hover:shadow-primary/10"
+          class="absolute w-64 bg-surface border rounded-xl shadow-xl overflow-hidden cursor-move transition-all"
+          :class="store.selectedTable === node.label ? 'border-primary ring-2 ring-primary/40 shadow-primary/20' : 'border-outline-variant hover:border-primary/60 hover:shadow-lg'"
         >
           <!-- Table Node Header -->
-          <div class="px-3.5 py-2.5 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
-            <div class="flex items-center gap-2 font-mono font-bold text-xs text-on-surface truncate">
-              <span class="material-symbols-outlined text-primary text-sm">table_rows</span>
+          <div class="px-3.5 py-2 bg-surface-container-low border-b border-outline-variant flex items-center justify-between">
+            <div class="flex items-center gap-2 font-mono font-bold text-xs text-on-surface truncate min-w-0">
+              <span class="material-symbols-outlined text-primary text-sm flex-shrink-0">table_rows</span>
               <span class="truncate">{{ node.label }}</span>
             </div>
-            <span class="text-[9px] font-mono px-1.5 py-0.5 bg-primary/20 text-primary rounded border border-primary/30 font-bold">
-              {{ node.columns?.length || 0 }} cols
-            </span>
+            <div class="flex items-center gap-1 flex-shrink-0">
+              <span class="text-[9px] font-mono px-1.5 py-0.5 bg-primary/20 text-primary rounded border border-primary/30 font-bold">
+                {{ node.columns?.length || 0 }} cols
+              </span>
+            </div>
           </div>
 
           <!-- Column Attributes -->
-          <div class="p-2 space-y-1 max-h-60 overflow-y-auto font-mono text-[11px]">
+          <div class="p-2 space-y-1 max-h-56 overflow-y-auto font-mono text-[11px]">
             <div
               v-for="col in node.columns"
               :key="col.name"
@@ -137,6 +153,28 @@
               <span class="text-[10px] text-primary font-semibold shrink-0">{{ col.dataType }}</span>
             </div>
           </div>
+
+          <!-- Node Footer Actions -->
+          <div class="px-3 py-1.5 bg-surface-container-low/80 border-t border-outline-variant flex items-center justify-between text-[11px] font-mono">
+            <button
+              @click.stop="store.selectTable(node.label, 'data')"
+              class="hover:text-primary transition-colors flex items-center gap-0.5 text-on-surface-variant font-bold text-[10px]"
+            >
+              <span class="material-symbols-outlined text-xs">table_chart</span> Data
+            </button>
+            <button
+              @click.stop="store.selectTable(node.label, 'explorer')"
+              class="hover:text-primary transition-colors flex items-center gap-0.5 text-on-surface-variant font-bold text-[10px]"
+            >
+              <span class="material-symbols-outlined text-xs">schema</span> Schema
+            </button>
+            <button
+              @click.stop="store.queryTable(node.label)"
+              class="hover:text-primary transition-colors flex items-center gap-0.5 text-on-surface-variant font-bold text-[10px]"
+            >
+              <span class="material-symbols-outlined text-xs">terminal</span> SQL
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -147,6 +185,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useAppStore } from '../stores/app';
 import { api } from '../api';
+import TableSelector from './TableSelector.vue';
 
 const store = useAppStore();
 const nodes = ref([]);
@@ -180,7 +219,7 @@ async function loadGraph() {
         position: {
           x: col * 300 + 40,
           y: row * 300 + 40,
-        }
+        },
       };
     });
   } catch (err) {
@@ -188,11 +227,21 @@ async function loadGraph() {
   }
 }
 
+function focusTable({ table }) {
+  if (!table) return;
+  store.selectedTable = table;
+  const targetNode = nodes.value.find((n) => n.label === table || n.id === table);
+  if (targetNode) {
+    panX.value = -targetNode.position.x * zoom.value + 300;
+    panY.value = -targetNode.position.y * zoom.value + 200;
+  }
+}
+
 const edgesWithCoordinates = computed(() => {
   const nodeMap = new Map();
-  nodes.value.forEach(n => nodeMap.set(n.id, n));
+  nodes.value.forEach((n) => nodeMap.set(n.id, n));
 
-  return edges.value.map(edge => {
+  return edges.value.map((edge) => {
     const sourceNode = nodeMap.get(edge.source);
     const targetNode = nodeMap.get(edge.target);
 
@@ -223,9 +272,17 @@ const edgesWithCoordinates = computed(() => {
   });
 });
 
-function zoomIn() { zoom.value = Math.min(zoom.value + 0.15, 2.5); }
-function zoomOut() { zoom.value = Math.max(zoom.value - 0.15, 0.4); }
-function resetView() { zoom.value = 1; panX.value = 60; panY.value = 60; }
+function zoomIn() {
+  zoom.value = Math.min(zoom.value + 0.15, 2.5);
+}
+function zoomOut() {
+  zoom.value = Math.max(zoom.value - 0.15, 0.4);
+}
+function resetView() {
+  zoom.value = 1;
+  panX.value = 60;
+  panY.value = 60;
+}
 
 function onWheel(e) {
   e.preventDefault();
@@ -242,17 +299,18 @@ function startPan(e) {
 
 function startDragNode(e, node) {
   draggingNode.value = node;
-  nodeDragOffsetX.value = (e.clientX / zoom.value) - node.position.x;
-  nodeDragOffsetY.value = (e.clientY / zoom.value) - node.position.y;
+  nodeDragOffsetX.value = (e.clientX - panX.value) / zoom.value - node.position.x;
+  nodeDragOffsetY.value = (e.clientY - panY.value) / zoom.value - node.position.y;
 }
 
 function doPanOrDrag(e) {
-  if (draggingNode.value) {
-    draggingNode.value.position.x = (e.clientX / zoom.value) - nodeDragOffsetX.value;
-    draggingNode.value.position.y = (e.clientY / zoom.value) - nodeDragOffsetY.value;
-  } else if (isPanning.value) {
+  if (isPanning.value) {
     panX.value = e.clientX - startPanX.value;
     panY.value = e.clientY - startPanY.value;
+  } else if (draggingNode.value) {
+    const x = (e.clientX - panX.value) / zoom.value - nodeDragOffsetX.value;
+    const y = (e.clientY - panY.value) / zoom.value - nodeDragOffsetY.value;
+    draggingNode.value.position = { x, y };
   }
 }
 
@@ -261,6 +319,5 @@ function endPanOrDrag() {
   draggingNode.value = null;
 }
 
-onMounted(loadGraph);
-watch(() => store.activeConnectionId, loadGraph);
+watch(() => store.activeConnectionId, loadGraph, { immediate: true });
 </script>

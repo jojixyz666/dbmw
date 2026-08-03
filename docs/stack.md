@@ -1,4 +1,4 @@
-# Technology Stack — DBMW v0.0.1
+# Technology Stack — DBMW v0.1.0
 
 Every technical decision in DBMW is optimized for simplicity, performance, memory efficiency, and local-first reliability.
 
