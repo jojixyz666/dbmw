@@ -1,9 +1,9 @@
 site_name: DBMW Documentation
 site_description: Lightweight, self-hosted, local-first database management workspace
 site_author: M-Code
-site_url: https://github.com/m-code/dbmw
-repo_url: https://github.com/m-code/dbmw
-repo_name: m-code/dbmw
+site_url: https://jojixyz666.github.io/dbmw/
+repo_url: https://github.com/jojixyz666/dbmw
+repo_name: jojixyz666/dbmw
 
 docs_dir: docs
 
