@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "obsidian": {
+      "type": "local",
+      "command": ["npx", "-y", "obsidian-mcp-server@latest"],
+      "enabled": true,
+      "environment": {
+        "MCP_TRANSPORT_TYPE": "stdio",
+        "OBSIDIAN_BASE_URL": "https://127.0.0.1:27124",
+        "OBSIDIAN_API_KEY": "32244861bcb80e1bc0784c36406075a2926ad88da0de587cad11560de12b4dc9",
+        "OBSIDIAN_VERIFY_SSL": "false"
+      }
+    }
+  }
+}
